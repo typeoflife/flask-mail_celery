@@ -1,13 +1,13 @@
 from celery import Celery
 from flask import jsonify, request
-from flask_mail import Message
 from jsonschema import validate, ValidationError
 from app import app, db, mail
 from models import User, Adv
 from schema import USER_CREATE, ADV_CREATE
+from flask_mail import Message
+from generator import chunk_generator
 
-
-celery = Celery('run', broker=app.config['CELERY_BROKER_URL'], result_backend=app.config['CELERY_RESULT_BACKEND'])
+celery = Celery('run', backend=app.config['result_backend'], broker=app.config['broker_url'])
 celery.conf.update(app.config)
 
 
@@ -19,11 +19,16 @@ class ContextTask(celery.Task):
 
 celery.Task = ContextTask
 
-@celery.task
-def send_async_email(msg):
+
+@celery.task()
+def send_async_email(email_data):
+    """Отправка email в фоновом режиме с Flask-Mail."""
+    msg = Message(email_data['subject'],
+                  sender=app.config['MAIL_DEFAULT_SENDER'],
+                  recipients=(email_data['to']))
+    msg.body = email_data['body']
     with app.app_context():
         mail.send(msg)
-
 
 
 @app.route('/user/<int:user_id>', methods=['GET'])
@@ -109,22 +114,28 @@ def delete_adv(adv_id):
     })
 
 
-
+# Создаем список всех emails
 def get_users_mails():
-    mail_list = []
     users = User.query.all()
-    for user in users:
-        mail_list.append(user.email)
+    mail_list = [user.email for user in users]
     return mail_list
 
 
-@app.route('/send_mails/', methods=['POST'])
-def send_mails():
-    msg = Message('Hello from Flask',
-                  recipients=get_users_mails())
-    msg.body = 'This is a test email sent from a background Celery task.'
-    print(msg)
-    send_async_email.delay(msg)
+# Отправляем всем пользователям email
+@app.route('/send_emails', methods=['GET', 'POST'])
+def send_emails():
+    gen = chunk_generator(get_users_mails())
+    for mails in gen:
+        print(mails)
+        email_data = {
+            'subject': 'Hello from Flask!',
+            'to': mails,
+            'body': 'This is a test email sent from a background Celery task.'
+        }
+
+        send_async_email.delay(email_data)
+    return {"status": 'success'}
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

@@ -1,9 +1,9 @@
 import requests
 
 HOST = 'http://127.0.0.1:8080/'
-#
+
 # response = requests.post(HOST + 'user',
-#                          json={'username': 'Denis', 'email': 'denis@yandex.ru', 'password': '1132231adnb123wa22B1'})
+#                          json={'username': 'Denis', 'email': 'cospubartu@vusra.com', 'password': '***'})
 #
 # print(response.status_code)
 # print(response.json())
@@ -25,6 +25,6 @@ HOST = 'http://127.0.0.1:8080/'
 # print(response.status_code)
 # print(response.json())
 
-response = requests.post(HOST + 'send_mails/')
+response = requests.post(HOST + 'send_emails')
 print(response.status_code)
 print(response.text)

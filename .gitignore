@@ -1,6 +1,4 @@
-base.db
 config.py
 .idea
 __pycache__
 *.db
-*.sqlite3

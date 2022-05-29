@@ -7,4 +7,4 @@ API для сайта объявлений с возможностью реги�
 
 ***Команда для запуска celery на windows***
 
-######celery -A run.celery worker -l info -P eventlet
+######celery -A run.celery worker -l info -P eventlet######
